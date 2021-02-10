@@ -1,0 +1,11 @@
+flask
+flask-sqlalchemy
+flask-migrate
+sqlalchemy-utils
+python-dotenv==0.14.0
+#pysqlite3
+pandas
+dash
+plotly
+dash-bootstrap-components
+dash-table==4.5.0
