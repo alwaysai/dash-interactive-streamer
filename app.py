@@ -51,16 +51,16 @@ def perform_object_detection(frame):
     return frame
 
 # Flask routes (how client sends data to server)
-def gen_video_feed():
+def gen_video_feed(camera):
     while True:
-        frame = perform_object_detection(camera.update())
-
+        frame = camera.get_frame()
         yield (b'--frame\r\n'
-            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
 
 @app.route('/video')
 def video():
-    return Response(gen_video_feed(),
+    return Response(gen_video_feed(camera),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route("/")
