@@ -17,23 +17,22 @@ import edgeiq
 import cv2
 import time
 
-
 # edgeIQ
 camera = edgeiq.WebcamVideoStream(cam=0)
 obj_detect = edgeiq.ObjectDetection("alwaysai/mobilenet_ssd")
 obj_detect.load(engine=edgeiq.Engine.DNN)
 
-# helper function to return video feed as string
-def gen_video_feed(camera):
+# Data
+data = pd.DataFrame()
+START_TIME = time.time()
+
+# functions for rendering frame and performing object detection
+def gen_video_feed():
     while True:
         frame = camera.read()
         frame = perform_object_detection(frame)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-
-# Data
-data = pd.DataFrame()
-START_TIME = time.time()
 
 def perform_object_detection(frame):
     """Perform object detction on an image, update
@@ -73,7 +72,7 @@ app = Flask(__name__, instance_relative_config=False)
 # Flask routes (add as needed)
 @app.route('/video_feed')
 def video_feed():
-    return Response(gen_video_feed(camera),
+    return Response(gen_video_feed(),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route("/")
