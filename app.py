@@ -13,15 +13,20 @@ from flask import render_template, request, Response
 import edgeiq
 import cv2
 import time
-from video_stream import VideoCamera
 
-# Flask app
-app = Flask(__name__, instance_relative_config=False)
 
 # edgeIQ
-camera = VideoCamera()
+camera = edgeiq.WebcamVideoStream(cam=0)
 obj_detect = edgeiq.ObjectDetection("alwaysai/mobilenet_ssd")
 obj_detect.load(engine=edgeiq.Engine.DNN)
+
+# Flask routes (how client sends data to server)
+def gen_video_feed(camera):
+    while True:
+        frame = camera.read()
+        frame = perform_object_detection(frame)
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
 # Data
 data = pd.DataFrame()
@@ -50,16 +55,12 @@ def perform_object_detection(frame):
 
     return frame
 
-# Flask routes (how client sends data to server)
-def gen_video_feed(camera):
-    while True:
-        frame = camera.get_frame()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
+# Flask app
+app = Flask(__name__, instance_relative_config=False)
 
-@app.route('/video')
-def video():
+@app.route('/video_feed')
+def video_feed():
     return Response(gen_video_feed(camera),
                     mimetype='multipart/x-mixed-replace; boundary=frame')
 
@@ -88,7 +89,7 @@ dash_app.layout = dbc.Container(fluid=True, children=[
         dbc.Col(
             # streamer content
             html.Img(
-                    src="/video", 
+                    src="/video_feed", 
                     style={'position': 'center', 'width': 600, 'height': 350}
                 )
         ),     
@@ -139,6 +140,5 @@ def render_log_table(n_intervals):
 
 
 if __name__ == "__main__":
-    # run the flask server on start
-    camera.set_video()
-    app.run(host='localhost', port=5001, debug=True)
+    camera.start()
+    app.run(host='localhost', port=5001, debug=False)
