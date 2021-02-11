@@ -141,4 +141,9 @@ def render_log_table(n_intervals):
 
 if __name__ == "__main__":
     camera.start()
-    app.run(host='localhost', port=5001, debug=False)
+    try:
+        app.run(host='localhost', port=5001, debug=False)
+    except Exception as e:
+        print(e)
+    finally:
+        camera.stop()
