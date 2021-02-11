@@ -13,12 +13,13 @@ from flask import render_template, request, Response
 import edgeiq
 import cv2
 import time
+from video_stream import VideoCamera
 
 # Flask app
 app = Flask(__name__, instance_relative_config=False)
 
 # edgeIQ
-streamer = edgeiq.WebcamVideoStream(cam=0)
+camera = VideoCamera()
 obj_detect = edgeiq.ObjectDetection("alwaysai/mobilenet_ssd")
 obj_detect.load(engine=edgeiq.Engine.DNN)
 
@@ -52,7 +53,7 @@ def perform_object_detection(frame):
 # Flask routes (how client sends data to server)
 def gen_video_feed():
     while True:
-        frame = perform_object_detection(streamer.read())
+        frame = perform_object_detection(camera.update())
 
         yield (b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
@@ -139,5 +140,5 @@ def render_log_table(n_intervals):
 
 if __name__ == "__main__":
     # run the flask server on start
-    streamer.start()
+    camera.set_video()
     app.run(host='localhost', port=5001, debug=True)
