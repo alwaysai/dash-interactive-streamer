@@ -1,4 +1,3 @@
-import pandas as pd
 import plotly.express as px
 import dash
 import dash_core_components as dcc
@@ -8,8 +7,12 @@ import dash_bootstrap_components as dbc
 import dash_table
 from dash.exceptions import PreventUpdate
 import plotly.graph_objects as go
+
 from flask import Flask
 from flask import render_template, request, Response
+
+import pandas as pd
+
 import edgeiq
 import cv2
 import time
@@ -20,7 +23,7 @@ camera = edgeiq.WebcamVideoStream(cam=0)
 obj_detect = edgeiq.ObjectDetection("alwaysai/mobilenet_ssd")
 obj_detect.load(engine=edgeiq.Engine.DNN)
 
-# Flask routes (how client sends data to server)
+# helper function to return video feed as string
 def gen_video_feed(camera):
     while True:
         frame = camera.read()
@@ -33,6 +36,15 @@ data = pd.DataFrame()
 START_TIME = time.time()
 
 def perform_object_detection(frame):
+    """Perform object detction on an image, update
+    the table data, and returns a string.
+
+    Args:
+        frame (numpy array): The frame from the camera stream.
+
+    Returns:
+        string: The string representation of the image
+    """
     frame = edgeiq.resize(frame, width=800, height=300)
     results = obj_detect.detect_objects(frame, confidence_level=.5)
     frame = edgeiq.markup_image(
@@ -55,10 +67,10 @@ def perform_object_detection(frame):
 
     return frame
 
-
 # Flask app
 app = Flask(__name__, instance_relative_config=False)
 
+# Flask routes (add as needed)
 @app.route('/video_feed')
 def video_feed():
     return Response(gen_video_feed(camera),
@@ -68,13 +80,7 @@ def video_feed():
 def home():
     return render_template("index.html")
 
-# if using as a server, send data and process
-@app.route("/event", methods=["POST"])
-def event():
-    body = request.json
-    return Response("{'success': 'event tracked'}", status=200, mimetype='application/json')
-
-# Dash
+# Dash Setup
 dash_app = dash.Dash(
     __name__,
     server=app, # associate Flask
@@ -83,15 +89,16 @@ dash_app = dash.Dash(
     external_stylesheets=[dbc.themes.LUX]
 )
 
+# Dash Layout
 dash_app.layout = dbc.Container(fluid=True, children=[
     # body
     dbc.Row([
         dbc.Col(
             # streamer content
             html.Img(
-                    src="/video_feed", 
-                    style={'position': 'center', 'width': 600, 'height': 350}
-                )
+                src="/video_feed", 
+                style={'position': 'center', 'width': 600, 'height': 350}
+            )
         ),     
     ]),
     dash_table.DataTable(
@@ -130,7 +137,7 @@ dash_app.layout = dbc.Container(fluid=True, children=[
     )
 ])
 
-# Dash callbacks
+# Dash Callbacks
 @dash_app.callback(
     output=[Output("logs", "data"), Output("logs", "columns")],
     inputs=[Input('interval-component', 'n_intervals')])
