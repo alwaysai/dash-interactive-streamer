@@ -11,4 +11,5 @@ After you've configured your project, run `aai app install`, and `aai app start`
 
 ## Troubleshooting
 alwaysAI Documentation: https://alwaysai.co  
-Discord Community at: https://discord.gg/R2uM36U
+Discord Community at: https://discord.gg/alwaysai
+
